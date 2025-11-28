@@ -1,40 +1,30 @@
-// app.js - frontend logic for Zenzoro dashboard
+// SELECT ELEMENTS
+const statusBox = document.getElementById("server-status");
+const priceBox  = document.getElementById("btc-price");
 
-const API_BASE = ""; 
-// keep empty: frontend + backend from same origin → use relative URLs
+// BASE API URL
+const API = "https://zenzoro.online/api";
 
-const statusBtn = document.getElementById("check-status-btn");
-const priceBtn = document.getElementById("get-price-btn");
-const statusBox = document.getElementById("status-box");
-const priceBox = document.getElementById("price-box");
-const yearSpan = document.getElementById("year");
-
-if (yearSpan) {
-  yearSpan.textContent = new Date().getFullYear();
-}
-
-function getUrl(path) {
-  return `${API_BASE || ""}${path}`;
-}
-
-statusBtn.addEventListener("click", async () => {
-  statusBox.textContent = "Loading server status...";
+// HANDLE SERVER STATUS
+document.getElementById("check-status").addEventListener("click", async () => {
+  statusBox.textContent = "Checking...";
   try {
-    const res = await fetch(getUrl("/api/status"));
+    const res = await fetch(`${API}/status`);
     const data = await res.json();
     statusBox.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
-    statusBox.textContent = "Error contacting server.";
+    statusBox.textContent = "Error: " + err.message;
   }
 });
 
-priceBtn.addEventListener("click", async () => {
-  priceBox.textContent = "Loading BTC price...";
+// HANDLE BTC PRICE
+document.getElementById("get-btc").addEventListener("click", async () => {
+  priceBox.textContent = "Loading...";
   try {
-    const res = await fetch(getUrl("/api/price"));
+    const res = await fetch(`${API}/price/btc`);
     const data = await res.json();
     priceBox.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
-    priceBox.textContent = "Error fetching price.";
+    priceBox.textContent = "Error: " + err.message;
   }
 });
