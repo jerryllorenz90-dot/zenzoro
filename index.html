@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zenzoro – Crypto Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Zenzoro – Reinventing the future of finance. Simple crypto dashboard demo."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="hero">
+        <div class="logo">ⓩ</div>
+        <div>
+          <h1>Zenzoro</h1>
+          <p>Reinventing the future of finance</p>
+        </div>
+      </header>
+
+      <main class="panel">
+        <section class="controls">
+          <h2>Controls</h2>
+          <button id="check-status-btn">Check Server Status</button>
+          <button id="get-price-btn">Get BTC Price</button>
+        </section>
+
+        <section class="output">
+          <h2>Server Status</h2>
+          <pre id="status-box">Click "Check Server Status"</pre>
+
+          <h2>BTC Price</h2>
+          <pre id="price-box">Click "Get BTC Price"</pre>
+        </section>
+      </main>
+
+      <footer class="foot">
+        <small>© <span id="year"></span> Zenzoro. Demo build for investors.</small>
+      </footer>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
