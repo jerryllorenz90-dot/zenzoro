@@ -1,17 +1,15 @@
 {
-  "name": "zenzoro",
+  "name": "zenzoro-backend",
   "version": "1.0.0",
-  "description": "Zenzoro crypto dashboard - Node + Express + static frontend",
+  "description": "Zenzoro production backend",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
-  "engines": {
-    "node": ">=18"
-  },
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^3.3.2",
+    "cors": "^2.8.5"
   }
 }
