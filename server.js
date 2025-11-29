@@ -14,10 +14,8 @@ app.get("/api/status", (req, res) => {
 
 // BTC Price route
 app.get("/api/price/btc", async (req, res) => {
-  // Static test value (you can connect real API later)
   res.json({ btc: "78000" });
 });
-
 // Root
 app.get("/", (req, res) => {
   res.send("Zenzoro Backend Running");
