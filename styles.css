@@ -1,39 +1,203 @@
+/* Zenzoro dashboard styles */
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background: #0e021f;
-  font-family: Arial, sans-serif;
-  color: white;
-  text-align: center;
   margin: 0;
-  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: radial-gradient(circle at top, #3f2b96 0, #0b0219 55%);
+  color: #ffffff;
 }
 
-.header {
-  padding: 30px;
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.controls {
-  margin-top: 20px;
+.top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
-button, select {
-  padding: 12px 18px;
-  margin: 5px;
-  border-radius: 10px;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(from 200deg, #ffb347, #ff5ead, #9b5cff);
+  font-weight: 700;
+}
+
+.top-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.top-header p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #cbb9ff;
+}
+
+main {
+  flex: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px 30px;
+}
+
+.grid-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: rgba(12, 3, 35, 0.95);
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(146, 125, 255, 0.22);
+}
+
+.status-card pre {
+  background: #100628;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.price-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.mini-card {
+  background: #160934;
+  border-radius: 12px;
+  padding: 10px;
+  text-align: left;
+}
+
+.coin-symbol {
+  font-size: 12px;
+  color: #cbb9ff;
+}
+
+.coin-price {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.chart-card {
+  margin-top: 6px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chart-header h2 {
+  margin: 0;
+}
+
+.chart-header p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #cbb9ff;
+}
+
+.chart-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.chart-wrapper {
+  margin-top: 12px;
+  height: 260px;
+}
+
+/* Buttons & selects */
+
+.primary-btn,
+.ghost-btn,
+select {
+  border-radius: 999px;
+  padding: 8px 14px;
   border: none;
-  font-size: 16px;
-  background: linear-gradient(90deg, #ffb347, #ff5ead);
-  color: white;
+  font-size: 13px;
   cursor: pointer;
 }
 
-.output-container {
-  background: #1b1035;
-  padding: 20px;
-  margin: 20px;
-  border-radius: 15px;
+.primary-btn {
+  background: linear-gradient(135deg, #ffb347, #ff5ead);
+  color: white;
+  font-weight: 600;
 }
 
-pre {
-  font-size: 18px;
-  white-space: pre-wrap;
+.ghost-btn {
+  background: transparent;
+  color: #f4d2ff;
+  border: 1px solid rgba(244, 210, 255, 0.4);
+}
+
+select {
+  background: #160934;
+  color: #f4d2ff;
+  border: 1px solid rgba(146, 125, 255, 0.6);
+}
+
+/* Footer */
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  padding: 12px;
+  color: #907ac9;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .grid-row {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .top-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 }
