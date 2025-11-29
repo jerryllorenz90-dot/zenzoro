@@ -1,27 +1,64 @@
-const express = require("express");
-const cors = require("cors");
+// --- ZENZORO BACKEND (Production Ready) ---
+import express from "express";
+import fetch from "node-fetch";
+import cors from "cors";
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
+// Allow frontend to access API
+app.use(cors());
+
+// Railway PORT
 const PORT = process.env.PORT || 8080;
 
-// Health route
+// --- HEALTH CHECK ---
 app.get("/api/status", (req, res) => {
   res.json({ status: "Server is running!" });
 });
 
-// Correct price route
+// --- REAL BTC PRICE ---
 app.get("/api/price/btc", async (req, res) => {
-  res.json({ btc: "78000" });
+  try {
+    const url =
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    res.json({ btc: data.bitcoin.usd });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Unable to fetch BTC price" });
+  }
 });
 
-// Root fallback
-app.get("/", (req, res) => {
-  res.send("Zenzoro Backend Running");
+// --- MULTIPLE CRYPTO PRICES ---
+app.get("/api/prices", async (req, res) => {
+  try {
+    const coins = ["bitcoin", "ethereum", "solana", "binancecoin", "dogecoin"];
+
+    const url =
+      "https://api.coingecko.com/api/v3/simple/price?ids=" +
+      coins.join(",") +
+      "&vs_currencies=usd";
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    res.json({
+      BTC: data.bitcoin.usd,
+      ETH: data.ethereum.usd,
+      SOL: data.solana.usd,
+      BNB: data.binancecoin.usd,
+      DOGE: data.dogecoin.usd,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Unable to load crypto prices" });
+  }
 });
 
+// --- START SERVER ---
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Zenzoro backend running on port ${PORT}`);
 });
