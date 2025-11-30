@@ -1,1 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zenzoro – Crypto Intelligence Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./styles.css" />
+  <!-- Chart.js for history chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="brand">
+        <div class="logo-circle">
+          <span>Z</span>
+        </div>
+        <div>
+          <h1>Zenzoro</h1>
+          <p>Reinventing the future of finance</p>
+        </div>
+      </div>
+      <button id="refresh-all" class="primary-button">
+        🔄 Refresh Prices
+      </button>
+    </header>
 
+    <!-- Top row: server status + hero -->
+    <section class="top-grid">
+      <div class="card status-card">
+        <h2>Server Status</h2>
+        <pre id="status-box" class="code-box">Loading status...</pre>
+        <button id="check-status" class="secondary-button">
+          Check Status
+        </button>
+      </div>
+
+      <div class="card hero-card">
+        <h2>ZENZORO Crypto Monitor</h2>
+        <p>
+          Real-time prices, market overview and history tracking for the top
+          cryptocurrencies. Built for investors & founders.
+        </p>
+        <ul>
+          <li>✅ Live market data from CoinGecko</li>
+          <li>✅ Multi-coin overview (BTC, ETH, SOL, BNB, DOGE)</li>
+          <li>✅ 7-day history chart</li>
+        </ul>
+        <p class="coming-soon">
+          👤 Investor accounts & portfolios – coming soon
+        </p>
+      </div>
+    </section>
+
+    <!-- Market overview -->
+    <section class="card market-card">
+      <div class="market-header">
+        <h2>Market Overview</h2>
+        <div class="coin-tabs" id="coin-tabs">
+          <!-- Filled by JS: BTC / ETH / SOL / BNB / DOGE -->
+        </div>
+      </div>
+
+      <div class="market-grid" id="market-grid">
+        <!-- Filled by JS: price cards -->
+      </div>
+    </section>
+
+    <!-- History chart -->
+    <section class="card history-card">
+      <div class="history-header">
+        <h2 id="history-title">BTC – 7 Day History</h2>
+        <div class="history-controls">
+          <label for="history-symbol">Symbol:</label>
+          <select id="history-symbol">
+            <option value="btc">BTC</option>
+            <option value="eth">ETH</option>
+            <option value="sol">SOL</option>
+            <option value="bnb">BNB</option>
+            <option value="doge">DOGE</option>
+          </select>
+
+          <label for="history-days">Range:</label>
+          <select id="history-days">
+            <option value="1">24h</option>
+            <option value="7" selected>7d</option>
+            <option value="30">30d</option>
+            <option value="90">90d</option>
+          </select>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="history-chart"></canvas>
+      </div>
+      <p id="history-note" class="history-note">
+        Loading chart...
+      </p>
+    </section>
+
+    <footer class="footer">
+      © 2025 Zenzoro. Built for investors – powered by live market data.
+    </footer>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
