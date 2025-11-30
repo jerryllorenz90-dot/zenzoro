@@ -1,300 +1,247 @@
-// Frontend logic for Zenzoro dashboard
+// Zenzoro frontend logic
 
-const API_BASE = ""; // same origin
-let authToken = localStorage.getItem("zenzoro_token") || null;
-let marketsCache = [];
+const API_BASE = "/api";
 
-// Elements
 const statusBox = document.getElementById("status-box");
-const checkStatusBtn = document.getElementById("check-status");
-const refreshBtn = document.getElementById("refresh-markets");
 const marketGrid = document.getElementById("market-grid");
+const coinTabs = document.getElementById("coin-tabs");
+const historyTitle = document.getElementById("history-title");
+const historySymbolSelect = document.getElementById("history-symbol");
+const historyDaysSelect = document.getElementById("history-days");
+const historyNote = document.getElementById("history-note");
 
-const authForm = document.getElementById("auth-form");
-const authEmail = document.getElementById("auth-email");
-const authPassword = document.getElementById("auth-password");
-const authError = document.getElementById("auth-error");
-const tabLogin = document.getElementById("tab-login");
-const tabRegister = document.getElementById("tab-register");
-const authSubmit = document.getElementById("auth-submit");
-const userSummary = document.getElementById("user-summary");
-const userEmailSpan = document.getElementById("user-email");
-const logoutBtn = document.getElementById("logout-btn");
+let historyChart = null;
 
-const portfolioGuest = document.getElementById("portfolio-guest");
-const portfolioContent = document.getElementById("portfolio-content");
-const portfolioRows = document.getElementById("portfolio-rows");
-const portfolioTotal = document.getElementById("portfolio-total");
-const portfolioForm = document.getElementById("portfolio-form");
-const pfSymbol = document.getElementById("pf-symbol");
-const pfAmount = document.getElementById("pf-amount");
-const pfAvg = document.getElementById("pf-avg");
-const pfMsg = document.getElementById("portfolio-msg");
+const DEFAULT_SYMBOLS = ["btc", "eth", "sol", "bnb", "doge"];
 
-const chartSymbolSelect = document.getElementById("chart-symbol");
-const chartMsg = document.getElementById("chart-msg");
-const chartCanvas = document.getElementById("price-chart");
-let priceChart = null;
+// --------------- helpers -----------------
 
-// ===== Helpers =====
-
-function setToken(token, email) {
-  authToken = token;
-  if (token) {
-    localStorage.setItem("zenzoro_token", token);
-    userSummary.classList.remove("hidden");
-    logoutBtn.classList.remove("hidden");
-    if (email) userEmailSpan.textContent = email;
-    portfolioGuest.classList.add("hidden");
-    portfolioContent.classList.remove("hidden");
-  } else {
-    localStorage.removeItem("zenzoro_token");
-    userSummary.classList.add("hidden");
-    logoutBtn.classList.add("hidden");
-    portfolioGuest.classList.remove("hidden");
-    portfolioContent.classList.add("hidden");
-    userEmailSpan.textContent = "";
+function formatMoney(value) {
+  if (value === null || value === undefined) return "–";
+  if (value >= 1_000_000_000_000) {
+    return `$${(value / 1_000_000_000_000).toFixed(2)}T`;
   }
+  if (value >= 1_000_000_000) {
+    return `$${(value / 1_000_000_000).toFixed(2)}B`;
+  }
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(2)}M`;
+  }
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
-async function api(path, options = {}) {
-  const headers = options.headers || {};
-  headers["Content-Type"] = "application/json";
-  if (authToken) headers["Authorization"] = "Bearer " + authToken;
-  const res = await fetch(API_BASE + path, { ...options, headers });
+function formatPrice(value) {
+  if (value === null || value === undefined) return "–";
+  if (value >= 1000) {
+    return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
+  return `$${value.toFixed(4)}`;
+}
+
+// --------------- API calls -----------------
+
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`);
   if (!res.ok) {
-    let err;
-    try {
-      err = await res.json();
-    } catch {
-      err = { error: "Request failed" };
-    }
-    throw new Error(err.error || "Request failed");
+    throw new Error(`Request failed ${res.status}`);
   }
   return res.json();
 }
 
-// ===== Status =====
-checkStatusBtn.addEventListener("click", async () => {
-  statusBox.textContent = "Checking server...";
+// Status
+async function loadStatus() {
+  statusBox.textContent = "Checking backend...";
   try {
-    const data = await api("/api/status", { method: "GET" });
-    statusBox.textContent = JSON.stringify(data, null, 2);
+    const json = await apiGet("/status");
+    statusBox.textContent = JSON.stringify(json, null, 2);
   } catch (err) {
-    statusBox.textContent = "Error: " + err.message;
+    console.error(err);
+    statusBox.textContent = `Error: ${err.message}`;
   }
-});
+}
 
-// ===== Auth tabs =====
-tabLogin.addEventListener("click", () => {
-  tabLogin.classList.add("active");
-  tabRegister.classList.remove("active");
-  authSubmit.textContent = "Login";
-});
-
-tabRegister.addEventListener("click", () => {
-  tabRegister.classList.add("active");
-  tabLogin.classList.remove("active");
-  authSubmit.textContent = "Register";
-});
-
-authForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  authError.textContent = "";
-  const email = authEmail.value.trim();
-  const password = authPassword.value.trim();
-  if (!email || !password) return;
-
-  const isRegister = tabRegister.classList.contains("active");
-  const path = isRegister ? "/api/auth/register" : "/api/auth/login";
-
-  authSubmit.disabled = true;
-  authSubmit.textContent = isRegister ? "Creating..." : "Signing in...";
-
+// Market prices
+async function loadMarket() {
   try {
-    const data = await api(path, {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    setToken(data.token, data.user.email);
-    authError.textContent = "";
-    authPassword.value = "";
-    await loadPortfolio();
-  } catch (err) {
-    authError.textContent = err.message;
-  } finally {
-    authSubmit.disabled = false;
-    authSubmit.textContent = tabRegister.classList.contains("active")
-      ? "Register"
-      : "Login";
-  }
-});
+    const params = `?symbols=${DEFAULT_SYMBOLS.join(",")}`;
+    const json = await apiGet(`/prices${params}`);
 
-logoutBtn.addEventListener("click", () => {
-  setToken(null);
-  portfolioRows.innerHTML = "";
-  portfolioTotal.textContent = "";
-});
+    if (!json.ok) throw new Error("Backend returned error");
 
-// ===== Markets =====
+    const data = json.data;
+    marketGrid.innerHTML = "";
 
-async function loadMarkets() {
-  marketGrid.innerHTML = "";
-  try {
-    const data = await api("/api/markets");
-    marketsCache = data;
-    data.forEach((m) => {
+    data.forEach((coin) => {
+      const change = coin.change24h ?? 0;
+      const changeClass =
+        change > 0 ? "change-positive" : change < 0 ? "change-negative" : "";
+      const changePrefix = change > 0 ? "+" : "";
+
       const card = document.createElement("div");
-      card.className = "market-card";
-      const change = m.change24h || 0;
-      const cls = change >= 0 ? "pos" : "neg";
+      card.className = "market-card-item";
       card.innerHTML = `
-        <div class="market-symbol">${m.symbol}</div>
-        <div class="market-price">$${m.price.toLocaleString(undefined, {
-          maximumFractionDigits: 2,
-        })}</div>
-        <div class="market-change ${cls}">
-          ${change >= 0 ? "+" : ""}${change.toFixed(2)}% (24h)
+        <div class="market-symbol">${coin.symbol}</div>
+        <div class="market-name">${coin.name}</div>
+        <div class="market-price">${formatPrice(coin.price)}</div>
+        <div class="market-sub">
+          <span class="${changeClass}">
+            ${changePrefix}${change.toFixed(2)}% (24h)
+          </span>
+        </div>
+        <div class="market-sub">
+          Mkt Cap: ${formatMoney(coin.marketCap)}<br/>
+          Vol 24h: ${formatMoney(coin.volume24h)}
         </div>
       `;
       marketGrid.appendChild(card);
     });
   } catch (err) {
-    marketGrid.innerHTML = `<p class="error">${err.message}</p>`;
+    console.error(err);
+    marketGrid.innerHTML =
+      '<p style="color:#f97373;font-size:13px;">Failed to load market data.</p>';
   }
 }
 
-refreshBtn.addEventListener("click", loadMarkets);
+// History chart
+async function loadHistory() {
+  const symbol = historySymbolSelect.value;
+  const days = historyDaysSelect.value;
 
-// ===== Portfolio =====
+  historyTitle.textContent =
+    `${symbol.toUpperCase()} – ${days === "1" ? "24h" : days + " Day"} History`;
+  historyNote.textContent = "Loading chart...";
 
-function getPriceForSymbol(symbol) {
-  const item = marketsCache.find((m) => m.symbol === symbol);
-  return item ? item.price : null;
-}
-
-async function loadPortfolio() {
-  if (!authToken) return;
   try {
-    const data = await api("/api/portfolio");
-    portfolioRows.innerHTML = "";
-    let totalValue = 0;
-    data.holdings.forEach((h) => {
-      const price = getPriceForSymbol(h.symbol) || 0;
-      const value = price * Number(h.amount);
-      totalValue += value;
+    const json = await apiGet(`/history/${symbol}?days=${days}`);
+    if (!json.ok) throw new Error("Backend returned error");
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${h.symbol}</td>
-        <td>${Number(h.amount).toFixed(4)}</td>
-        <td>$${Number(h.avg_buy_price).toFixed(2)}</td>
-        <td>$${value.toLocaleString(undefined, {
-          maximumFractionDigits: 2,
-        })}</td>
-      `;
-      portfolioRows.appendChild(tr);
-    });
-    portfolioTotal.textContent =
-      "Total value: $" +
-      totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  } catch (err) {
-    pfMsg.textContent = "Error loading portfolio: " + err.message;
-  }
-}
+    const points = json.history || [];
+    if (!points.length) {
+      historyNote.textContent = "No history data available.";
+      if (historyChart) historyChart.destroy();
+      return;
+    }
 
-portfolioForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!authToken) {
-    pfMsg.textContent = "You must be logged in.";
-    return;
-  }
-  const symbol = pfSymbol.value;
-  const amount = Number(pfAmount.value);
-  const avg = Number(pfAvg.value);
-  if (!symbol || !amount || !avg) return;
-
-  pfMsg.textContent = "Saving...";
-  try {
-    await api("/api/portfolio", {
-      method: "POST",
-      body: JSON.stringify({
-        symbol,
-        amount,
-        avgBuyPrice: avg,
-      }),
-    });
-    pfMsg.textContent = "Saved.";
-    await loadPortfolio();
-  } catch (err) {
-    pfMsg.textContent = "Error: " + err.message;
-  }
-});
-
-// ===== Charts =====
-
-async function loadChart(symbol) {
-  chartMsg.textContent = "Loading history...";
-  try {
-    const data = await api(`/api/history/${symbol}`);
-    const labels = data.history.map((p) =>
-      new Date(p.time).toLocaleDateString(undefined, {
+    const labels = points.map((p) => {
+      const d = new Date(p.time);
+      if (days === "1") {
+        return d.toLocaleTimeString(undefined, {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+      return d.toLocaleDateString(undefined, {
         month: "short",
-        day: "numeric",
-      })
-    );
-    const prices = data.history.map((p) => p.price);
+        day: "numeric"
+      });
+    });
 
-    if (priceChart) priceChart.destroy();
+    const prices = points.map((p) => p.price);
 
-    priceChart = new Chart(chartCanvas.getContext("2d"), {
+    const ctx = document.getElementById("history-chart").getContext("2d");
+    if (historyChart) historyChart.destroy();
+
+    historyChart = new Chart(ctx, {
       type: "line",
       data: {
         labels,
         datasets: [
           {
-            label: `${symbol} price (USD)`,
+            label: `${symbol.toUpperCase()} price (USD)`,
             data: prices,
-            tension: 0.35,
+            tension: 0.25,
+            borderWidth: 2,
+            pointRadius: 0,
+            borderColor: "#a855ff",
             fill: true,
-          },
-        ],
+            backgroundColor: "rgba(168, 85, 255, 0.15)"
+          }
+        ]
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => formatPrice(ctx.parsed.y)
+            }
+          }
         },
         scales: {
           x: {
-            ticks: { maxTicksLimit: 6 },
+            ticks: {
+              color: "#9ca3af",
+              maxTicksLimit: 6
+            },
+            grid: { display: false }
           },
-        },
-      },
+          y: {
+            ticks: {
+              color: "#9ca3af",
+              callback: (val) => `$${val}`
+            },
+            grid: {
+              color: "rgba(148, 163, 184, 0.2)"
+            }
+          }
+        }
+      }
     });
 
-    chartMsg.textContent = "";
+    historyNote.textContent = `Data from CoinGecko – ${points.length} points loaded.`;
   } catch (err) {
-    chartMsg.textContent = "Error loading chart: " + err.message;
+    console.error(err);
+    historyNote.textContent = "Failed to load chart data.";
   }
 }
 
-chartSymbolSelect.addEventListener("change", () =>
-  loadChart(chartSymbolSelect.value)
-);
+// Build top tabs
+function initTabs() {
+  coinTabs.innerHTML = "";
+  DEFAULT_SYMBOLS.forEach((symbol, index) => {
+    const tab = document.createElement("button");
+    tab.className = "coin-tab" + (index === 0 ? " active" : "");
+    tab.dataset.symbol = symbol;
+    tab.textContent = symbol.toUpperCase();
+    tab.addEventListener("click", () => {
+      document
+        .querySelectorAll(".coin-tab")
+        .forEach((el) => el.classList.remove("active"));
+      tab.classList.add("active");
+      historySymbolSelect.value = symbol;
+      loadHistory();
+    });
+    coinTabs.appendChild(tab);
+  });
+}
 
-// ===== Initial load =====
+// --------------- events -----------------
 
-(async function init() {
-  if (authToken) {
-    // Try to fetch current user to validate token
-    try {
-      const data = await api("/api/me");
-      setToken(authToken, data.user.email);
-    } catch {
-      setToken(null);
-    }
-  }
+document
+  .getElementById("check-status")
+  .addEventListener("click", () => loadStatus());
 
-  loadMarkets();
-  loadChart(chartSymbolSelect.value);
-})();
+document
+  .getElementById("refresh-all")
+  .addEventListener("click", () => {
+    loadStatus();
+    loadMarket();
+    loadHistory();
+  });
+
+historySymbolSelect.addEventListener("change", loadHistory);
+historyDaysSelect.addEventListener("change", loadHistory);
+
+// --------------- init -----------------
+
+document.addEventListener("DOMContentLoaded", () => {
+  initTabs();
+  loadStatus();
+  loadMarket();
+  loadHistory();
+
+  // auto-refresh market every 60s
+  setInterval(loadMarket, 60000);
+});
