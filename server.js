@@ -1,145 +1,68 @@
-// Zenzoro backend: live prices + 7-day history + static frontend
-
-import express from "express";
-import cors from "cors";
-import fetch from "node-fetch";
-import path from "path";
-import { fileURLToPath } from "url";
+// server.js - ZENZORO production backend
+const path = require("path");
+const express = require("express");
+const cors = require("cors");
+const { getPrices, getHistory } = require("./backend/cryptoService");
 
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Resolve __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Serve static frontend files (index.html, app.js, styles.css)
-app.use(express.static(__dirname));
-
-const PORT = process.env.PORT || 8080;
-
-// Map short symbols to CoinGecko IDs
-const COIN_MAP = {
-  btc: "bitcoin",
-  eth: "ethereum",
-  sol: "solana",
-  bnb: "binancecoin",
-  doge: "dogecoin"
-};
-
-// Simple in-memory cache to reduce API calls
-const cache = {
-  prices: null,       // { data: {...}, ts: timestamp }
-  history: {}         // { [symbol]: { [days]: { data, ts } } }
-};
-
-const PRICES_TTL_MS = 60 * 1000;      // 1 minute cache for current prices
-const HISTORY_TTL_MS = 5 * 60 * 1000; // 5 minutes cache for history
-
-function isFresh(entry, ttl) {
-  if (!entry || !entry.ts) return false;
-  return Date.now() - entry.ts < ttl;
-}
+// Serve static frontend
+const publicDir = path.join(__dirname, "public");
+app.use(express.static(publicDir));
 
 // Health check
 app.get("/api/status", (req, res) => {
-  res.json({ status: "ok", service: "Zenzoro backend", time: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    service: "Zenzoro backend",
+    time: new Date().toISOString()
+  });
 });
 
-// Single BTC price (kept for compatibility)
-app.get("/api/price/btc", async (req, res) => {
-  try {
-    const url =
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
-    const response = await fetch(url);
-    const data = await response.json();
-
-    res.json({ btc: data.bitcoin?.usd ?? null });
-  } catch (error) {
-    console.error("BTC price error:", error);
-    res.status(500).json({ error: "Unable to fetch BTC price" });
-  }
-});
-
-// Multi-coin prices
+// Current prices for multiple coins
+// GET /api/prices?symbols=btc,eth,sol,bnb,doge
 app.get("/api/prices", async (req, res) => {
   try {
-    // Return cached if still fresh
-    if (isFresh(cache.prices, PRICES_TTL_MS)) {
-      return res.json(cache.prices.data);
-    }
-
-    const ids = Object.values(COIN_MAP).join(",");
-    const url =
-      "https://api.coingecko.com/api/v3/simple/price?ids=" +
-      ids +
-      "&vs_currencies=usd";
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    const result = {
-      BTC: data.bitcoin?.usd ?? null,
-      ETH: data.ethereum?.usd ?? null,
-      SOL: data.solana?.usd ?? null,
-      BNB: data.binancecoin?.usd ?? null,
-      DOGE: data.dogecoin?.usd ?? null
-    };
-
-    cache.prices = { data: result, ts: Date.now() };
-
-    res.json(result);
-  } catch (error) {
-    console.error("Multi-price error:", error);
-    res.status(500).json({ error: "Unable to load crypto prices" });
+    const symbolsParam = req.query.symbols || "btc,eth,sol,bnb,doge";
+    const symbols = symbolsParam.split(",").map((s) => s.trim().toLowerCase());
+    const data = await getPrices(symbols);
+    res.json({ ok: true, data });
+  } catch (err) {
+    console.error("Error in /api/prices:", err);
+    res.status(500).json({ ok: false, error: "Failed to load prices" });
   }
 });
 
-// 7-day history for a coin (hourly)
+// Historical price data (for chart)
+// GET /api/history/btc?days=7
 app.get("/api/history/:symbol", async (req, res) => {
   try {
     const symbol = req.params.symbol.toLowerCase();
-    const id = COIN_MAP[symbol];
-
-    if (!id) {
-      return res.status(400).json({ error: "Unsupported coin symbol" });
-    }
-
-    const days = 7;
-
-    // Create nested cache structure if needed
-    if (!cache.history[symbol]) cache.history[symbol] = {};
-    const cachedEntry = cache.history[symbol][days];
-
-    if (isFresh(cachedEntry, HISTORY_TTL_MS)) {
-      return res.json({ symbol, points: cachedEntry.data });
-    }
-
-    const url = `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}&interval=hourly`;
-    const response = await fetch(url);
-    const data = await response.json();
-
-    const prices = (data.prices || []).map(([ts, price]) => ({
-      time: ts,
-      price
-    }));
-
-    cache.history[symbol][days] = { data: prices, ts: Date.now() };
-
-    res.json({ symbol, points: prices });
-  } catch (error) {
-    console.error("History error:", error);
-    res.status(500).json({ error: "Unable to load price history" });
+    const days = parseInt(req.query.days || "7", 10);
+    const history = await getHistory(symbol, days);
+    res.json({ ok: true, symbol, history });
+  } catch (err) {
+    console.error("Error in /api/history:", err);
+    res.status(500).json({ ok: false, error: "Failed to load history" });
   }
 });
 
-// Fallback: send index.html for any unknown route (SPA-style)
+// Fallback: always return index.html for unknown routes (SPA-style)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(publicDir, "index.html"));
 });
 
-// Start server
+// Railway / local port
+const PORT =
+  process.env.PORT ||
+  process.env.RAILWAY_PORT ||
+  process.env.NODE_PORT ||
+  8080;
+
 app.listen(PORT, () => {
-  console.log(`Zenzoro backend running on port ${PORT}`);
+  console.log(`ZENZORO backend running on port ${PORT}`);
 });
