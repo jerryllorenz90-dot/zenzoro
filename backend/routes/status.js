@@ -1,12 +1,8 @@
-const express = require("express");
+import express from "express";
+import { getStatus } from "../controllers/statusController.js";
+
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  res.json({
-    status: "ok",
-    service: "Zenzoro backend",
-    time: new Date().toISOString()
-  });
-});
+router.get("/", getStatus);
 
-module.exports = router;
+export default router;
