@@ -1,0 +1,263 @@
+/* Global layout */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+  color: #f8f3ff;
+  background: radial-gradient(circle at top, #3c2bff, #0b0515 55%, #05010a);
+}
+
+/* Main container */
+.app {
+  max-width: 1100px;
+  margin: 32px auto 64px;
+  padding: 0 16px;
+}
+
+/* Header */
+.app-header {
+  margin-bottom: 24px;
+}
+
+.app-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-logo-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: conic-gradient(from 200deg, #ffb347, #7f5dff, #ff7ac3, #ffb347);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 18px rgba(255, 182, 255, 0.4);
+}
+
+.app-logo-letter {
+  font-weight: 800;
+  font-size: 20px;
+  color: #1a1026;
+}
+
+.app-title-block h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.app-title-block p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #bbb1ff;
+}
+
+/* Status bar */
+.status-bar {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: rgba(8, 240, 145, 0.12);
+  color: #8effc5;
+  border: 1px solid rgba(8, 240, 145, 0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #08f091;
+}
+
+.status-meta {
+  font-size: 12px;
+  color: #8a7fff;
+}
+
+/* Cards layout */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr);
+  gap: 18px;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.1fr);
+  }
+}
+
+.card {
+  background: radial-gradient(circle at top left, #25164b, #120820);
+  border-radius: 18px;
+  padding: 18px 18px 16px;
+  border: 1px solid rgba(145, 122, 255, 0.35);
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.6);
+}
+
+/* Card headers */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card-subtitle {
+  font-size: 12px;
+  color: #9e90ff;
+}
+
+/* Coin selector pills */
+.coin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coin-tab {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  color: #c1b9ff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+.coin-tab.active {
+  background: linear-gradient(135deg, #5f4bff, #c779ff);
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(162, 128, 255, 0.7);
+}
+
+.coin-tab:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Market cards */
+.market-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 600px) {
+  .market-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.market-card {
+  background: rgba(6, 2, 28, 0.9);
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(108, 90, 214, 0.7);
+}
+
+.market-symbol {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a79eff;
+}
+
+.market-name {
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+.market-price {
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.market-row {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #958cff;
+}
+
+.badge-up {
+  color: #4dffb1;
+}
+
+.badge-down {
+  color: #ff7d9f;
+}
+
+/* Chart area */
+.chart-wrapper {
+  margin-top: 10px;
+  padding-top: 4px;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: #a99fff;
+}
+
+/* Small helper text */
+.helper-text {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #7f74d4;
+}
+
+/* Error & loading */
+.error-text {
+  color: #ff9fb8;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.loading-text {
+  font-size: 12px;
+  color: #c1b9ff;
+  margin-top: 6px;
+}
+
+/* JSON debug box */
+.debug-box {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(11, 5, 29, 0.9);
+  border: 1px dashed rgba(141, 124, 255, 0.4);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  color: #eae6ff;
+  max-height: 170px;
+  overflow: auto;
+}
