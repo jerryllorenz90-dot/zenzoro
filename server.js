@@ -1,41 +1,59 @@
 import express from "express";
-import dotenv from "dotenv";
+import mongoose from "mongoose";
 import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
-import connectDB from "./config/db.js";
-
-import statusRoutes from "./routes/statusRoutes.js";
-import priceRoutes from "./routes/priceRoutes.js";
-import historyRoutes from "./routes/historyRoutes.js";
+import dotenv from "dotenv";
 
 dotenv.config();
-const app = express();
-const PORT = process.env.PORT || 8080;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Connect MongoDB
-connectDB();
+// -----------------------------
+// DATABASE CONNECTION
+// -----------------------------
+const MONGO_URI = process.env.MONGO_URI;
 
-// Serve frontend files
-app.use(express.static(path.join(__dirname, "public")));
+if (!MONGO_URI) {
+    console.error("❌ Missing MONGO_URI in environment variables");
+    process.exit(1);
+}
 
+mongoose
+    .connect(MONGO_URI, {
+        serverSelectionTimeoutMS: 10000
+    })
+    .then(() => console.log("✅ MongoDB Connected Successfully"))
+    .catch((err) => {
+        console.error("❌ MongoDB Connection Error:", err.message);
+        process.exit(1);
+    });
+
+// -----------------------------
+// SIMPLE STATUS CHECK ROUTE
+// -----------------------------
+app.get("/status", (req, res) => {
+    res.json({
+        status: "ok",
+        service: "Zenzoro Backend",
+        time: new Date().toISOString()
+    });
+});
+
+// -----------------------------
+// DEFAULT ROOT MESSAGE
+// -----------------------------
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+    res.send("🚀 Zenzoro Backend is Running Successfully");
 });
 
-// API routes
-app.use("/api/status", statusRoutes);
-app.use("/api/prices", priceRoutes);
-app.use("/api/history", historyRoutes);
+// -----------------------------
+// START SERVER
+// -----------------------------
+const PORT = process.env.PORT || 8080;
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, () =>
+    console.log(`🚀 Server running on port ${PORT}`)
+);
