@@ -1,18 +1,14 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGO_URI;
-
-    if (!mongoURI) {
-      throw new Error("❌ MONGO_URI is missing in Railway variables.");
-    }
-
-    await mongoose.connect(mongoURI);
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000
+    });
     console.log("✅ MongoDB Connected Successfully");
-  } catch (error) {
-    console.error("❌ MongoDB Connection Error:", error.message);
+  } catch (err) {
+    console.error("❌ MongoDB Connection Error:", err.message);
   }
 };
 
-module.exports = connectDB;
+export default connectDB;
