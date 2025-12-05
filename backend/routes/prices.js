@@ -1,11 +1,8 @@
-const express = require("express");
+import express from "express";
+import { getPrices } from "../controllers/priceController.js";
+
 const router = express.Router();
-const { getPrices } = require("../services/cryptoService");
 
-router.get("/", async (req, res) => {
-  const data = await getPrices();
-  if (!data) return res.status(500).json({ error: "Failed to load prices" });
-  res.json(data);
-});
+router.get("/", getPrices);
 
-module.exports = router;
+export default router;
