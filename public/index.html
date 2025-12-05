@@ -2,106 +2,133 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Zenzoro – Crypto Monitor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zenzoro – Crypto Portfolio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="/styles.css" />
-  <!-- Chart.js for the price history chart -->
+  <!-- Chart.js for the history chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="page">
-    <!-- Top nav / brand -->
-    <header class="topbar">
+  <div class="app-shell">
+    <!-- Sidebar / Auth -->
+    <aside class="sidebar">
       <div class="brand">
         <div class="brand-logo">Z</div>
         <div class="brand-text">
-          <div class="brand-title">Zenzoro</div>
-          <div class="brand-subtitle">Realtime Crypto Monitor</div>
+          <h1>Zenzoro</h1>
+          <p>Investor dashboard</p>
         </div>
       </div>
-      <div class="topbar-right">
-        <span class="pill pill-live">Live</span>
-        <button id="refresh-all" class="btn btn-outline">Refresh Data</button>
-      </div>
-    </header>
 
-    <!-- Main layout -->
-    <main class="layout">
-      <!-- Left column: status + market overview -->
-      <section class="column">
-        <!-- Server status card -->
-        <section class="card card-status">
-          <div class="card-header">
-            <h2>Backend Status</h2>
-            <span id="status-indicator" class="dot dot-offline"></span>
-          </div>
-          <pre id="status-json" class="code-block">Loading status…</pre>
-        </section>
-
-        <!-- Market overview card -->
-        <section class="card card-market">
-          <div class="card-header space-between">
-            <div>
-              <h2>Market Overview</h2>
-              <p class="card-subtitle">Top coins powered by Zenzoro backend</p>
-            </div>
-            <div class="chip-group" id="coin-filter">
-              <button class="chip chip-active" data-symbol="BTC">BTC</button>
-              <button class="chip" data-symbol="ETH">ETH</button>
-              <button class="chip" data-symbol="SOL">SOL</button>
-              <button class="chip" data-symbol="BNB">BNB</button>
-              <button class="chip" data-symbol="DOGE">DOGE</button>
-            </div>
-          </div>
-
-          <div id="market-error" class="error-text hidden"></div>
-
-          <div id="market-cards" class="market-grid">
-            <!-- JS will fill cards here -->
-          </div>
-
-          <p id="market-updated" class="updated-text"></p>
-        </section>
+      <section class="auth-card" id="auth-section">
+        <h2>Sign in</h2>
+        <p class="auth-helper">Demo login only – no real accounts yet.</p>
+        <form id="login-form">
+          <label>
+            Name
+            <input type="text" id="login-name" placeholder="Satoshi Nakamoto" required />
+          </label>
+          <label>
+            Password
+            <input type="password" id="login-password" placeholder="••••••••" required />
+          </label>
+          <button type="submit" class="btn-primary">Sign in</button>
+        </form>
       </section>
 
-      <!-- Right column: history chart -->
-      <section class="column">
-        <section class="card card-history">
-          <div class="card-header space-between">
-            <div>
-              <h2>Price History</h2>
-              <p class="card-subtitle">Interactive 7–90 day chart</p>
-            </div>
-            <div class="controls">
-              <select id="history-symbol" class="select">
-                <option value="bitcoin">BTC</option>
-                <option value="ethereum">ETH</option>
-                <option value="solana">SOL</option>
-                <option value="bnb">BNB</option>
-                <option value="dogecoin">DOGE</option>
-              </select>
-              <select id="history-range" class="select">
-                <option value="7d">7D</option>
-                <option value="30d">30D</option>
-                <option value="90d">90D</option>
-              </select>
-            </div>
+      <section class="auth-card hidden" id="profile-section">
+        <div class="profile-header">
+          <div class="avatar" id="avatar-letter">U</div>
+          <div>
+            <h2 id="profile-name"></h2>
+            <p class="profile-subtitle">Demo investor</p>
           </div>
+        </div>
 
-          <div id="history-error" class="error-text hidden"></div>
-
-          <div class="chart-wrapper">
-            <canvas id="history-chart"></canvas>
+        <div class="profile-metrics">
+          <div>
+            <span class="metric-label">Portfolio Value</span>
+            <span class="metric-value" id="portfolio-value">$0.00</span>
           </div>
+          <div>
+            <span class="metric-label">24h Change</span>
+            <span class="metric-chip" id="portfolio-change">—</span>
+          </div>
+        </div>
 
-          <p id="history-updated" class="updated-text"></p>
-        </section>
+        <button id="logout-btn" class="btn-ghost">Log out</button>
+      </section>
+
+      <section class="status-card">
+        <h3>Backend status</h3>
+        <pre id="status-output" class="status-output">Checking...</pre>
+        <button id="refresh-status" class="btn-small">Refresh status</button>
+      </section>
+    </aside>
+
+    <!-- Main dashboard -->
+    <main class="main">
+      <header class="main-header">
+        <div>
+          <h2>Crypto Portfolio</h2>
+          <p class="muted">
+            Real-time prices from your Zenzoro backend. Demo portfolio only.
+          </p>
+        </div>
+        <button id="refresh-prices" class="btn-primary">Refresh prices</button>
+      </header>
+
+      <!-- Market overview cards -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Market Overview</h3>
+          <div class="symbol-tabs">
+            <button data-symbol="BTC" class="tab active">BTC</button>
+            <button data-symbol="ETH" class="tab">ETH</button>
+            <button data-symbol="SOL" class="tab">SOL</button>
+          </div>
+        </div>
+
+        <div class="grid-cards" id="market-grid">
+          <!-- cards filled by JS -->
+        </div>
+      </section>
+
+      <!-- Portfolio breakdown -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Your Holdings</h3>
+          <p class="muted">Pre-configured demo portfolio. Values update with live prices.</p>
+        </div>
+
+        <table class="portfolio-table">
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Amount</th>
+              <th>Price</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-table-body">
+            <!-- rows from JS -->
+          </tbody>
+        </table>
+      </section>
+
+      <!-- BTC history chart -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>BTC – 7 Day History</h3>
+          <div class="panel-controls">
+            <span class="muted" id="history-hint">Loading chart...</span>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="history-chart"></canvas>
+        </div>
       </section>
     </main>
-
-    <footer class="footer">
-      <span>© 2025 Zenzoro. Built for investors – powered by your live backend & MongoDB.</span>
-    </footer>
   </div>
 
   <script src="/app.js" defer></script>
