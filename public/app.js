@@ -1,40 +1,72 @@
-const API = "https://zenzoro.online/api";
+// public/app.js
 
-/* SERVER CHECK */
+const API_BASE = "/api";
+
+function setYear() {
+  const y = document.getElementById("year");
+  if (y) y.textContent = new Date().getFullYear();
+}
+
+async function safeFetch(url) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`HTTP ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
 async function checkStatus() {
-    try {
-        const res = await fetch(`${API}/status`);
-        const data = await res.json();
-        document.getElementById("statusResult").textContent =
-            JSON.stringify(data, null, 2);
-    } catch (err) {
-        document.getElementById("statusResult").textContent = "Error: " + err;
-    }
+  const box = document.getElementById("statusResult");
+  box.textContent = "Checking backend status...";
+  try {
+    const data = await safeFetch(`${API_BASE}/status`);
+    box.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    console.error(err);
+    box.textContent = `Error: ${err.message}`;
+  }
 }
 
-/* PRICES */
-async function loadPrice(symbol) {
-    try {
-        const res = await fetch(`${API}/prices/${symbol}`);
-        const data = await res.json();
-        document.getElementById("priceResult").textContent =
-            JSON.stringify(data, null, 2);
-    } catch (err) {
-        document.getElementById("priceResult").textContent = "Error: " + err;
-    }
+async function loadOverview(symbol) {
+  const box = document.getElementById("overviewResult");
+  box.textContent = `Loading overview for ${symbol.toUpperCase()}...`;
+  try {
+    const data = await safeFetch(
+      `${API_BASE}/overview?symbol=${encodeURIComponent(symbol)}`
+    );
+    box.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    console.error(err);
+    box.textContent = `Error: ${err.message}`;
+  }
 }
 
-/* HISTORY */
 async function loadHistory() {
-    const symbol = document.getElementById("symbol").value;
-    const range = document.getElementById("range").value;
+  const symbolSelect = document.getElementById("historySymbol");
+  const daysSelect = document.getElementById("historyDays");
+  const box = document.getElementById("historyResult");
 
-    try {
-        const res = await fetch(`${API}/history/${symbol}/${range}`);
-        const data = await res.json();
-        document.getElementById("historyResult").textContent =
-            JSON.stringify(data, null, 2);
-    } catch (err) {
-        document.getElementById("historyResult").textContent = "Error: " + err;
-    }
+  const symbol = symbolSelect.value;
+  const days = daysSelect.value;
+
+  box.textContent = `Loading history for ${symbol.toUpperCase()} (${days} days)...`;
+
+  try {
+    const data = await safeFetch(
+      `${API_BASE}/history?symbol=${encodeURIComponent(
+        symbol
+      )}&days=${encodeURIComponent(days)}`
+    );
+    box.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    console.error(err);
+    box.textContent = `Error: ${err.message}`;
+  }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  setYear();
+  // Optional: auto-load BTC overview on page load
+  loadOverview("btc").catch(() => {});
+});
