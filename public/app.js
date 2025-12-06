@@ -1,286 +1,241 @@
-// Base URL – relative since frontend is served by the same domain
-const API_BASE = "";
+// Coins we support
+const COINS = [
+  { id: "bitcoin", symbol: "BTC", name: "Bitcoin" },
+  { id: "ethereum", symbol: "ETH", name: "Ethereum" },
+  { id: "solana", symbol: "SOL", name: "Solana" },
+  { id: "binancecoin", symbol: "BNB", name: "BNB" },
+  { id: "dogecoin", symbol: "DOGE", name: "Dogecoin" }
+];
 
-// Demo portfolio (you can change these numbers)
-const PORTFOLIO = {
-  BTC: 0.4,
-  ETH: 2.3,
-  SOL: 10.5,
-};
-
-let latestPrices = null;
 let historyChart = null;
 
-/* -------------- Auth: simple demo login -------------- */
-
-const loginForm = document.getElementById("login-form");
-const loginNameInput = document.getElementById("login-name");
-const loginPasswordInput = document.getElementById("login-password");
-const authSection = document.getElementById("auth-section");
-const profileSection = document.getElementById("profile-section");
-const profileName = document.getElementById("profile-name");
-const avatarLetter = document.getElementById("avatar-letter");
-const logoutBtn = document.getElementById("logout-btn");
-const portfolioValueEl = document.getElementById("portfolio-value");
-const portfolioChangeEl = document.getElementById("portfolio-change");
-
-function setLoggedIn(name) {
-  localStorage.setItem("zenzoroUser", name);
-  profileName.textContent = name;
-  avatarLetter.textContent = name.trim()[0]?.toUpperCase() || "U";
-  authSection.classList.add("hidden");
-  profileSection.classList.remove("hidden");
-}
-
-function setLoggedOut() {
-  localStorage.removeItem("zenzoroUser");
-  authSection.classList.remove("hidden");
-  profileSection.classList.add("hidden");
-}
-
-loginForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = loginNameInput.value.trim();
-  const password = loginPasswordInput.value.trim();
-
-  if (!name || !password) return;
-
-  // Demo only – in real app you would call an auth endpoint
-  setLoggedIn(name);
-  loginPasswordInput.value = "";
-});
-
-logoutBtn.addEventListener("click", () => {
-  setLoggedOut();
-});
-
-const savedUser = localStorage.getItem("zenzoroUser");
-if (savedUser) {
-  setLoggedIn(savedUser);
-}
-
-/* -------------- Backend status -------------- */
-
-const statusOutput = document.getElementById("status-output");
-const refreshStatusBtn = document.getElementById("refresh-status");
-
-async function fetchStatus() {
-  statusOutput.textContent = "Checking...";
-  try {
-    const res = await fetch(`${API_BASE}/api/status`);
-    const json = await res.json();
-    statusOutput.textContent = JSON.stringify(json, null, 2);
-  } catch (err) {
-    statusOutput.textContent = "Error loading status: " + err.message;
-  }
-}
-
-refreshStatusBtn.addEventListener("click", fetchStatus);
-
-/* -------------- Prices + Market overview -------------- */
-
-const refreshPricesBtn = document.getElementById("refresh-prices");
-const marketGrid = document.getElementById("market-grid");
-const portfolioTableBody = document.getElementById("portfolio-table-body");
-
 function formatUSD(value) {
-  return "$" + value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  if (value == null || isNaN(value)) return "-";
+  if (value >= 1_000_000_000) return "$" + (value / 1_000_000_000).toFixed(2) + "B";
+  if (value >= 1_000_000) return "$" + (value / 1_000_000).toFixed(2) + "M";
+  if (value >= 1_000) return "$" + (value / 1_000).toFixed(2) + "K";
+  return "$" + value.toFixed(2);
 }
 
-async function fetchPrices() {
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Request failed: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+/* STATUS */
+
+async function loadStatus() {
+  const box = document.getElementById("status-box");
+  box.textContent = "Checking backend status...";
   try {
-    refreshPricesBtn.disabled = true;
-    refreshPricesBtn.textContent = "Refreshing...";
-    const res = await fetch(`${API_BASE}/api/prices`);
-    const json = await res.json();
-    latestPrices = json;
-    renderMarketCards();
-    renderPortfolioTable();
-    refreshPricesBtn.textContent = "Refresh prices";
+    const json = await fetchJSON("/api/status");
+    box.textContent = JSON.stringify(json, null, 2);
   } catch (err) {
-    console.error("Error fetching prices", err);
-    refreshPricesBtn.textContent = "Failed – retry";
-  } finally {
-    refreshPricesBtn.disabled = false;
+    console.error(err);
+    box.textContent = "Error loading status: " + err.message;
   }
 }
 
-function renderMarketCards() {
-  if (!latestPrices) return;
+/* MARKET OVERVIEW */
 
-  const mapping = {
-    BTC: { name: "Bitcoin" },
-    ETH: { name: "Ethereum" },
-    SOL: { name: "Solana" },
-  };
+function renderCoinTabs(activeId) {
+  const tabsEl = document.getElementById("coin-tabs");
+  tabsEl.innerHTML = "";
 
-  marketGrid.innerHTML = "";
+  COINS.forEach((coin) => {
+    const btn = document.createElement("button");
+    btn.className = "coin-tab" + (coin.id === activeId ? " active" : "");
+    btn.textContent = coin.symbol;
+    btn.dataset.coinId = coin.id;
+    tabsEl.appendChild(btn);
+  });
+}
 
-  Object.entries(mapping).forEach(([symbol, meta]) => {
-    const price = latestPrices[symbol.toLowerCase()];
-    const card = document.createElement("div");
-    card.className = "asset-card";
-    card.innerHTML = `
-      <div class="asset-header">
-        <span class="asset-symbol">${symbol}</span>
-        <span class="asset-symbol">${new Date(
-          latestPrices.timestamp || new Date()
-        ).toLocaleTimeString()}</span>
+function renderMarketCard(coin, coinData) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "market-card";
+
+  const price = coinData?.usd;
+  const change = coinData?.usd_24h_change;
+  const cap = coinData?.usd_market_cap;
+  const vol = coinData?.usd_24h_vol;
+
+  const changeClass =
+    typeof change === "number"
+      ? change >= 0
+        ? "positive"
+        : "negative"
+      : "";
+
+  const changeText =
+    typeof change === "number" ? `${change >= 0 ? "+" : ""}${change.toFixed(2)}% (24h)` : "-";
+
+  wrapper.innerHTML = `
+    <div class="market-header">
+      <div>
+        <div class="market-symbol">${coin.symbol}</div>
+        <div class="market-name">${coin.name}</div>
       </div>
-      <div class="asset-name">${meta.name}</div>
-      <div class="asset-price">${formatUSD(price)}</div>
-      <div class="asset-cap">Demo 24h change &amp; market cap coming soon</div>
-    `;
-    marketGrid.appendChild(card);
-  });
+    </div>
+    <div class="market-price">${price != null ? formatUSD(price) : "-"}</div>
+    <div class="market-change ${changeClass}">${changeText}</div>
+    <div class="market-meta">
+      Mkt Cap: ${cap != null ? formatUSD(cap) : "-"}<br/>
+      Vol (24h): ${vol != null ? formatUSD(vol) : "-"}
+    </div>
+  `;
+
+  return wrapper;
 }
 
-function renderPortfolioTable() {
-  if (!latestPrices) return;
+async function loadMarketOverview() {
+  const container = document.getElementById("market-cards");
+  container.innerHTML = "";
 
-  portfolioTableBody.innerHTML = "";
-
-  let total = 0;
-  Object.entries(PORTFOLIO).forEach(([symbol, amount]) => {
-    const price = latestPrices[symbol.toLowerCase()];
-    const value = price * amount;
-    total += value;
-
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${symbol}</td>
-      <td>${amount}</td>
-      <td>${formatUSD(price)}</td>
-      <td>${formatUSD(value)}</td>
+  for (const coin of COINS) {
+    const cardShell = document.createElement("div");
+    cardShell.className = "market-card";
+    cardShell.innerHTML = `
+      <div class="market-header">
+        <div>
+          <div class="market-symbol">${coin.symbol}</div>
+          <div class="market-name">${coin.name}</div>
+        </div>
+      </div>
+      <div class="market-price">Loading...</div>
     `;
-    portfolioTableBody.appendChild(row);
-  });
+    container.appendChild(cardShell);
 
-  portfolioValueEl.textContent = formatUSD(total);
-  portfolioChangeEl.textContent = "+0.00% (demo)";
-}
-
-/* -------------- History chart -------------- */
-
-const historyHint = document.getElementById("history-hint");
-const historyCanvas = document.getElementById("history-chart");
-
-/**
- * Fetch history from backend. If backend has no history yet,
- * we generate a smooth fake 7-day curve starting from current price.
- */
-async function fetchHistory() {
-  historyHint.textContent = "Loading chart...";
-  try {
-    const res = await fetch(`${API_BASE}/api/history`);
-    let json = await res.json();
-
-    if (!Array.isArray(json) || json.length === 0) {
-      json = generateMockHistory();
-      historyHint.textContent =
-        "Showing generated data – real history will appear once backend stores it.";
-    } else {
-      historyHint.textContent = "Live history from backend.";
+    try {
+      const data = await fetchJSON(`/api/prices?coin=${encodeURIComponent(coin.id)}`);
+      const details = data[coin.id];
+      const fullCard = renderMarketCard(coin, details);
+      container.replaceChild(fullCard, cardShell);
+    } catch (err) {
+      console.error(err);
+      cardShell.querySelector(".market-price").textContent = "Error loading";
     }
-
-    const labels = json
-      .slice()
-      .reverse()
-      .map((p) =>
-        new Date(p.timestamp || p.time || new Date()).toLocaleDateString(
-          "en-US",
-          { month: "short", day: "numeric" }
-        )
-      );
-    const prices = json
-      .slice()
-      .reverse()
-      .map((p) => p.btc || p.price || 0);
-
-    renderHistoryChart(labels, prices);
-  } catch (err) {
-    console.error("Error fetching history", err);
-    historyHint.textContent = "Failed to load history – showing demo data.";
-    const mock = generateMockHistory();
-    const labels = mock.map((p) => p.label);
-    const prices = mock.map((p) => p.price);
-    renderHistoryChart(labels, prices);
   }
 }
 
-function generateMockHistory() {
-  const base =
-    latestPrices?.btc ||
-    latestPrices?.bitcoin ||
-    90000; // fallback if price not loaded yet
-  const data = [];
-  const today = new Date();
+/* HISTORY CHART */
 
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const variance = (Math.sin(i / 2) * 0.03 + Math.random() * 0.01) * base;
-    const price = base * (1 + (Math.random() > 0.5 ? 1 : -1) * 0.02) + variance;
-    data.push({
-      label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      price,
-    });
-  }
-  return data;
-}
-
-function renderHistoryChart(labels, prices) {
-  if (historyChart) {
-    historyChart.destroy();
-  }
-
-  historyChart = new Chart(historyCanvas.getContext("2d"), {
+function buildChartConfig(labels, data) {
+  return {
     type: "line",
     data: {
       labels,
       datasets: [
         {
-          label: "BTC price (USD)",
-          data: prices,
+          label: "Price (USD)",
+          data,
           tension: 0.35,
           borderWidth: 2,
           pointRadius: 0,
-        },
-      ],
+          fill: true,
+          backgroundColor: "rgba(123, 92, 255, 0.25)",
+          borderColor: "rgba(189, 157, 255, 1)"
+        }
+      ]
     },
     options: {
-      plugins: {
-        legend: {
-          display: false,
-        },
-      },
+      responsive: true,
+      maintainAspectRatio: false,
       scales: {
         x: {
-          grid: {
-            display: false,
+          ticks: {
+            color: "#9b93c7",
+            maxTicksLimit: 7
           },
+          grid: {
+            display: false
+          }
         },
         y: {
           ticks: {
-            callback: (value) => "$" + value.toLocaleString("en-US"),
+            color: "#9b93c7",
+            callback: (v) => "$" + v.toLocaleString()
           },
-        },
+          grid: {
+            color: "rgba(255,255,255,0.08)"
+          }
+        }
       },
-    },
-  });
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => formatUSD(ctx.parsed.y)
+          }
+        }
+      }
+    }
+  };
 }
 
-/* -------------- Init -------------- */
+async function loadHistoryChart() {
+  const coinId = document.getElementById("history-coin").value;
+  const days = document.getElementById("history-range").value;
+  const errorEl = document.getElementById("history-error");
+  errorEl.textContent = "";
 
-async function init() {
-  fetchStatus();
-  await fetchPrices();
-  await fetchHistory();
+  try {
+    const json = await fetchJSON(
+      `/api/history?coin=${encodeURIComponent(coinId)}&days=${encodeURIComponent(days)}`
+    );
 
-  // Auto-refresh prices every 60s
-  setInterval(fetchPrices, 60000);
+    const prices = json.prices || [];
+    if (!prices.length) {
+      throw new Error("No history data available");
+    }
+
+    const labels = prices.map(([ts]) => {
+      const d = new Date(ts);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    });
+
+    const values = prices.map(([, price]) => price);
+
+    const ctx = document.getElementById("history-chart").getContext("2d");
+
+    if (historyChart) historyChart.destroy();
+    historyChart = new Chart(ctx, buildChartConfig(labels, values));
+  } catch (err) {
+    console.error(err);
+    errorEl.textContent = "Failed to load chart data.";
+  }
 }
 
-refreshPricesBtn.addEventListener("click", fetchPrices);
+/* INIT */
 
-document.addEventListener("DOMContentLoaded", init);
+function initEvents() {
+  document
+    .getElementById("refresh-status")
+    .addEventListener("click", loadStatus);
+
+  document
+    .getElementById("refresh-prices")
+    .addEventListener("click", loadMarketOverview);
+
+  document
+    .getElementById("history-coin")
+    .addEventListener("change", loadHistoryChart);
+
+  document
+    .getElementById("history-range")
+    .addEventListener("change", loadHistoryChart);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderCoinTabs("bitcoin");
+  initEvents();
+  loadStatus();
+  loadMarketOverview();
+  loadHistoryChart();
+});
