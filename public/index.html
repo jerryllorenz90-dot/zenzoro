@@ -2,77 +2,162 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Zenzoro Crypto Monitor</title>
+  <title>Zenzoro – Real-time Crypto Monitoring</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Chart.js for history chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="page">
-    <header class="top-bar">
-      <div class="logo">Zenzoro</div>
-      <div class="tagline">Real-time Crypto Monitoring</div>
+  <div class="app-shell">
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">Z</div>
+        <div class="brand-text">
+          <h1>Zenzoro</h1>
+          <p>Real-time Crypto Monitoring</p>
+        </div>
+      </div>
+
+      <div class="user-area">
+        <div id="user-info" class="user-info hidden">
+          <span id="user-email"></span>
+          <button id="logout-btn" class="btn btn-ghost">Logout</button>
+        </div>
+        <button id="open-auth" class="btn btn-primary">Sign in / Join</button>
+      </div>
     </header>
 
-    <main class="main">
-      <!-- SERVER STATUS -->
-      <section class="card status-card">
-        <div class="card-header">
-          <h2>Server Status</h2>
-          <button id="refresh-status" class="btn-secondary">Check Status</button>
-        </div>
-        <pre id="status-box" class="status-output">
-Waiting for status...
-        </pre>
-      </section>
-
-      <!-- MARKET OVERVIEW -->
-      <section class="card">
-        <div class="card-header">
-          <h2>Market Overview</h2>
-          <button id="refresh-prices" class="btn-primary">Refresh Prices</button>
-        </div>
-
-        <div class="coin-tabs" id="coin-tabs">
-          <!-- Buttons added by JS -->
-        </div>
-
-        <div class="market-grid" id="market-cards">
-          <!-- Cards added by JS -->
-        </div>
-      </section>
-
-      <!-- BTC HISTORY -->
-      <section class="card">
-        <div class="card-header">
-          <h2>BTC – 7 Day History</h2>
-          <div class="chart-controls">
-            <select id="history-coin">
-              <option value="bitcoin">BTC</option>
-              <option value="ethereum">ETH</option>
-              <option value="solana">SOL</option>
-              <option value="binancecoin">BNB</option>
-              <option value="dogecoin">DOGE</option>
-            </select>
-            <select id="history-range">
-              <option value="7">7d</option>
-              <option value="30">30d</option>
-              <option value="90">90d</option>
-            </select>
+    <!-- MAIN GRID -->
+    <main class="layout-grid">
+      <!-- LEFT COLUMN -->
+      <section class="column">
+        <!-- SERVER STATUS -->
+        <section class="card status-card">
+          <div class="card-header">
+            <h2>Server Status</h2>
+            <button id="check-status" class="btn btn-secondary">Check Status</button>
           </div>
-        </div>
-        <div class="chart-wrapper">
-          <canvas id="history-chart"></canvas>
-        </div>
-        <div id="history-error" class="error-text"></div>
+          <pre id="status-output" class="code-box">
+Press "Check Status" to verify backend...
+          </pre>
+        </section>
+
+        <!-- MARKET OVERVIEW -->
+        <section class="card">
+          <div class="card-header">
+            <h2>Market Overview</h2>
+            <button id="refresh-market" class="btn btn-secondary">Refresh Prices</button>
+          </div>
+
+          <div class="pill-row" id="symbol-tabs">
+            <button data-symbol="BTC" class="pill pill-active">BTC</button>
+            <button data-symbol="ETH" class="pill">ETH</button>
+            <button data-symbol="SOL" class="pill">SOL</button>
+            <button data-symbol="BNB" class="pill">BNB</button>
+            <button data-symbol="DOGE" class="pill">DOGE</button>
+          </div>
+
+          <div id="market-cards" class="market-grid">
+            <!-- Cards filled by JS -->
+          </div>
+
+          <p id="market-error" class="error-text hidden"></p>
+        </section>
+      </section>
+
+      <!-- RIGHT COLUMN -->
+      <section class="column">
+        <!-- BTC HISTORY -->
+        <section class="card">
+          <div class="card-header">
+            <h2>BTC – History</h2>
+            <div class="pill-row small">
+              <label class="pill small">
+                Symbol:
+                <select id="history-symbol">
+                  <option value="BTC">BTC</option>
+                  <option value="ETH">ETH</option>
+                  <option value="SOL">SOL</option>
+                  <option value="BNB">BNB</option>
+                  <option value="DOGE">DOGE</option>
+                </select>
+              </label>
+              <label class="pill small">
+                Range:
+                <select id="history-range">
+                  <option value="7d">7d</option>
+                  <option value="30d">30d</option>
+                  <option value="90d">90d</option>
+                </select>
+              </label>
+              <button id="refresh-history" class="btn btn-secondary small">
+                Load History
+              </button>
+            </div>
+          </div>
+
+          <div class="chart-wrapper">
+            <canvas id="history-chart"></canvas>
+          </div>
+
+          <p id="history-error" class="error-text hidden"></p>
+        </section>
+
+        <!-- PORTFOLIO COMING SOON -->
+        <section class="card coming-soon">
+          <h2>Investor Accounts & Portfolios</h2>
+          <p>
+            You’re now one step away from a full investor dashboard. With accounts enabled,
+            we’ll soon allow:
+          </p>
+          <ul>
+            <li>💼 Personal portfolios per user</li>
+            <li>🔔 Price alerts and watchlists</li>
+            <li>📊 Saved chart layouts</li>
+          </ul>
+          <p class="muted">Stay tuned – next upgrade.</p>
+        </section>
       </section>
     </main>
 
-    <footer class="footer">
-      © 2025 Zenzoro. Built for investors — powered by live market data.
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <span>© <span id="year"></span> Zenzoro. Built for investors – powered by live market data.</span>
     </footer>
   </div>
 
-  <script src="/app.js"></script>
+  <!-- AUTH MODAL -->
+  <div id="auth-overlay" class="auth-overlay hidden">
+    <div class="auth-modal">
+      <button id="close-auth" class="auth-close">×</button>
+      <h2 id="auth-title">Sign in</h2>
+
+      <form id="auth-form">
+        <label class="field">
+          Email
+          <input type="email" id="auth-email" required />
+        </label>
+        <label class="field">
+          Password
+          <input type="password" id="auth-password" minlength="6" required />
+        </label>
+
+        <button type="submit" class="btn btn-primary wide" id="auth-submit">
+          Sign in
+        </button>
+
+        <p id="auth-error" class="error-text"></p>
+
+        <p class="switch-auth">
+          <span id="switch-to-register">Need an account? Create one</span>
+          <span id="switch-to-login" class="hidden">Already have an account? Sign in</span>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
