@@ -1,27 +1,20 @@
-// backend/server.js
+// server.js
 const express = require("express");
 const cors = require("cors");
+const dotenv = require("dotenv");
 const path = require("path");
 const axios = require("axios");
-const mongoose = require("mongoose");
-require("dotenv").config();
 
+dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 8080;
 
-// ---------- MIDDLEWARE ----------
 app.use(cors());
 app.use(express.json());
 
-// ---------- STATIC FRONTEND ----------
-const publicDir = path.join(__dirname, "..", "public");
-app.use(express.static(publicDir));
+// ====== STATIC FRONTEND ======
+app.use(express.static(path.join(__dirname, "../public")));
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(publicDir, "index.html"));
-});
-
-// ---------- STATUS ENDPOINT ----------
+// ====== CHECK SERVER STATUS ======
 app.get("/api/status", (req, res) => {
   res.json({
     status: "ok",
@@ -30,118 +23,74 @@ app.get("/api/status", (req, res) => {
   });
 });
 
-// ---------- COINGECKO HELPERS ----------
-const COINGECKO_API = "https://api.coingecko.com/api/v3";
+// ====== COINGECKO API BASE ======
+const API_BASE =
+  "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false";
 
-const SYMBOL_MAP = {
-  btc: "bitcoin",
-  eth: "ethereum",
-  sol: "solana",
-  bnb: "binancecoin",
-  doge: "dogecoin",
-};
-
-function normalizeSymbol(symbolParam) {
-  const s = (symbolParam || "btc").toLowerCase();
-  return SYMBOL_MAP[s] || "bitcoin";
-}
-
-// Get overview for one coin
-async function fetchOverview(symbolParam) {
-  const id = normalizeSymbol(symbolParam);
-  const url = `${COINGECKO_API}/coins/markets`;
-
-  const { data } = await axios.get(url, {
-    params: {
-      vs_currency: "usd",
-      ids: id,
-    },
-  });
-
-  if (!data || !data.length) {
-    throw new Error("No data returned from CoinGecko");
-  }
-
-  const coin = data[0];
-
-  return {
-    symbol: (symbolParam || "btc").toUpperCase(),
-    name: coin.name,
-    price: coin.current_price,
-    change24h: coin.price_change_percentage_24h,
-    marketCap: coin.market_cap,
-    volume24h: coin.total_volume,
-  };
-}
-
-// Get history data for chart
-async function fetchHistory(symbolParam, rangeParam) {
-  const id = normalizeSymbol(symbolParam);
-
-  let days = 7;
-  if (rangeParam === "30d") days = 30;
-  if (rangeParam === "90d") days = 90;
-
-  const url = `${COINGECKO_API}/coins/${id}/market_chart`;
-
-  const { data } = await axios.get(url, {
-    params: {
-      vs_currency: "usd",
-      days,
-    },
-  });
-
-  if (!data || !data.prices) {
-    throw new Error("No price history returned from CoinGecko");
-  }
-
-  return data.prices.map(([timestamp, price]) => ({
-    time: timestamp,
-    price,
-  }));
-}
-
-// ---------- API ROUTES ----------
-
-// Market overview for a coin (used by your frontend)
+// ====== /api/overview (Market Overview) ======
 app.get("/api/overview", async (req, res) => {
   try {
-    const summary = await fetchOverview(req.query.symbol);
-    res.json({ success: true, data: summary });
+    const { symbol } = req.query;
+    const url = `${API_BASE}`;
+
+    const response = await axios.get(url);
+    const coins = response.data;
+
+    const coin = coins.find(
+      (c) => c.symbol.toLowerCase() === symbol?.toLowerCase()
+    );
+
+    if (!coin) return res.status(404).json({ error: "Coin not found" });
+
+    // Return EXACT structure frontend expects
+    return res.json({
+      success: true,
+      data: {
+        id: coin.id,
+        symbol: coin.symbol,
+        name: coin.name,
+        image: coin.image,
+        current_price: coin.current_price,
+        market_cap: coin.market_cap,
+        market_cap_rank: coin.market_cap_rank,
+        total_volume: coin.total_volume,
+        high_24h: coin.high_24h,
+        low_24h: coin.low_24h,
+        price_change_24h: coin.price_change_24h,
+        price_change_percentage_24h: coin.price_change_percentage_24h,
+        circulating_supply: coin.circulating_supply,
+      },
+    });
   } catch (err) {
-    console.error("Error /api/overview:", err.message);
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to load market data." });
+    console.error("Overview Error:", err.message);
+    res.status(500).json({ error: "Failed to load market overview" });
   }
 });
 
-// History data for chart
+// ====== /api/history (Historical Data) ======
 app.get("/api/history", async (req, res) => {
   try {
-    const points = await fetchHistory(req.query.symbol, req.query.range);
-    res.json({ success: true, data: points });
+    const { symbol, days } = req.query;
+    if (!symbol) return res.status(400).json({ error: "Missing symbol" });
+
+    const url = `https://api.coingecko.com/api/v3/coins/${symbol.toLowerCase()}/market_chart?vs_currency=usd&days=${days}`;
+
+    const response = await axios.get(url);
+
+    return res.json({ success: true, data: response.data });
   } catch (err) {
-    console.error("Error /api/history:", err.message);
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to load chart data." });
+    console.error("History Error:", err.message);
+    res.status(500).json({ error: "Failed to load historical data" });
   }
 });
 
-// ---------- DATABASE (OPTIONAL) ----------
-const mongoUri = process.env.MONGO_URI;
+// ====== FALLBACK ROUTE (Serve index.html) ======
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
 
-if (mongoUri) {
-  mongoose
-    .connect(mongoUri)
-    .then(() => console.log("✅ MongoDB connected"))
-    .catch((err) => console.error("MongoDB connection error:", err.message));
-} else {
-  console.log("⚠️ MONGO_URI not set - running without database");
-}
-
-// ---------- START SERVER ----------
+// ====== START SERVER ======
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Zenzoro backend running on port ${PORT}`);
 });
