@@ -1,53 +1,36 @@
 // backend/server.js
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const path = require("path");
-const connectDB = require("./db");
+const path = require('path');
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
 
 dotenv.config();
 
-const app = express();
+const { connectDB } = require('./db');
+const cryptoRoutes = require('./routes/cryptoRoutes'); // keep your existing crypto APIs
+const authRoutes = require('./routes/authRoutes');     // NEW
 
-// Middlewares
+const app = express();
+const PORT = process.env.PORT || 8080;
+
+// ===== MIDDLEWARE =====
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB
-connectDB();
+// ===== API ROUTES =====
+app.use('/api', cryptoRoutes);      // status, market, history etc.
+app.use('/api/auth', authRoutes);   // register, login, me
 
-// Serve frontend from ../public
-const publicPath = path.join(__dirname, "..", "public");
-app.use(express.static(publicPath));
+// ===== STATIC FRONTEND =====
+app.use(express.static(path.join(__dirname, '../public')));
 
-// Root -> send dashboard
-app.get("/", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
+// For any unknown route, serve index.html (so / also works)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
-// Simple backend health check
-app.get("/api/status", (req, res) => {
-  res.json({
-    status: "ok",
-    service: "Zenzoro Backend",
-    time: new Date().toISOString(),
-  });
-});
-
-// API routes
-const priceRoutes = require("./routes/priceRoutes");
-const historyRoutes = require("./routes/historyRoutes");
-const fetchRoutes = require("./routes/fetchRoutes");
-
-// Example:
-//   GET /api/prices?coin=bitcoin
-//   GET /api/history?coin=bitcoin&days=7
-app.use("/api/prices", priceRoutes);
-app.use("/api/history", historyRoutes);
-app.use("/api/fetch", fetchRoutes);
-
-// Start server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// ===== START SERVER =====
+app.listen(PORT, async () => {
+  await connectDB();
+  console.log(`🚀 Zenzoro backend running on port ${PORT}`);
 });
