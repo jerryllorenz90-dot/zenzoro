@@ -2,135 +2,77 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Zenzoro – Crypto Portfolio</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zenzoro Crypto Monitor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="/styles.css" />
-  <!-- Chart.js for the history chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="app-shell">
-    <!-- Sidebar / Auth -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-logo">Z</div>
-        <div class="brand-text">
-          <h1>Zenzoro</h1>
-          <p>Investor dashboard</p>
-        </div>
-      </div>
+  <div class="page">
+    <header class="top-bar">
+      <div class="logo">Zenzoro</div>
+      <div class="tagline">Real-time Crypto Monitoring</div>
+    </header>
 
-      <section class="auth-card" id="auth-section">
-        <h2>Sign in</h2>
-        <p class="auth-helper">Demo login only – no real accounts yet.</p>
-        <form id="login-form">
-          <label>
-            Name
-            <input type="text" id="login-name" placeholder="Satoshi Nakamoto" required />
-          </label>
-          <label>
-            Password
-            <input type="password" id="login-password" placeholder="••••••••" required />
-          </label>
-          <button type="submit" class="btn-primary">Sign in</button>
-        </form>
-      </section>
-
-      <section class="auth-card hidden" id="profile-section">
-        <div class="profile-header">
-          <div class="avatar" id="avatar-letter">U</div>
-          <div>
-            <h2 id="profile-name"></h2>
-            <p class="profile-subtitle">Demo investor</p>
-          </div>
-        </div>
-
-        <div class="profile-metrics">
-          <div>
-            <span class="metric-label">Portfolio Value</span>
-            <span class="metric-value" id="portfolio-value">$0.00</span>
-          </div>
-          <div>
-            <span class="metric-label">24h Change</span>
-            <span class="metric-chip" id="portfolio-change">—</span>
-          </div>
-        </div>
-
-        <button id="logout-btn" class="btn-ghost">Log out</button>
-      </section>
-
-      <section class="status-card">
-        <h3>Backend status</h3>
-        <pre id="status-output" class="status-output">Checking...</pre>
-        <button id="refresh-status" class="btn-small">Refresh status</button>
-      </section>
-    </aside>
-
-    <!-- Main dashboard -->
     <main class="main">
-      <header class="main-header">
-        <div>
-          <h2>Crypto Portfolio</h2>
-          <p class="muted">
-            Real-time prices from your Zenzoro backend. Demo portfolio only.
-          </p>
+      <!-- SERVER STATUS -->
+      <section class="card status-card">
+        <div class="card-header">
+          <h2>Server Status</h2>
+          <button id="refresh-status" class="btn-secondary">Check Status</button>
         </div>
-        <button id="refresh-prices" class="btn-primary">Refresh prices</button>
-      </header>
+        <pre id="status-box" class="status-output">
+Waiting for status...
+        </pre>
+      </section>
 
-      <!-- Market overview cards -->
-      <section class="panel">
-        <div class="panel-header">
-          <h3>Market Overview</h3>
-          <div class="symbol-tabs">
-            <button data-symbol="BTC" class="tab active">BTC</button>
-            <button data-symbol="ETH" class="tab">ETH</button>
-            <button data-symbol="SOL" class="tab">SOL</button>
-          </div>
+      <!-- MARKET OVERVIEW -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Market Overview</h2>
+          <button id="refresh-prices" class="btn-primary">Refresh Prices</button>
         </div>
 
-        <div class="grid-cards" id="market-grid">
-          <!-- cards filled by JS -->
+        <div class="coin-tabs" id="coin-tabs">
+          <!-- Buttons added by JS -->
+        </div>
+
+        <div class="market-grid" id="market-cards">
+          <!-- Cards added by JS -->
         </div>
       </section>
 
-      <!-- Portfolio breakdown -->
-      <section class="panel">
-        <div class="panel-header">
-          <h3>Your Holdings</h3>
-          <p class="muted">Pre-configured demo portfolio. Values update with live prices.</p>
-        </div>
-
-        <table class="portfolio-table">
-          <thead>
-            <tr>
-              <th>Asset</th>
-              <th>Amount</th>
-              <th>Price</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody id="portfolio-table-body">
-            <!-- rows from JS -->
-          </tbody>
-        </table>
-      </section>
-
-      <!-- BTC history chart -->
-      <section class="panel">
-        <div class="panel-header">
-          <h3>BTC – 7 Day History</h3>
-          <div class="panel-controls">
-            <span class="muted" id="history-hint">Loading chart...</span>
+      <!-- BTC HISTORY -->
+      <section class="card">
+        <div class="card-header">
+          <h2>BTC – 7 Day History</h2>
+          <div class="chart-controls">
+            <select id="history-coin">
+              <option value="bitcoin">BTC</option>
+              <option value="ethereum">ETH</option>
+              <option value="solana">SOL</option>
+              <option value="binancecoin">BNB</option>
+              <option value="dogecoin">DOGE</option>
+            </select>
+            <select id="history-range">
+              <option value="7">7d</option>
+              <option value="30">30d</option>
+              <option value="90">90d</option>
+            </select>
           </div>
         </div>
         <div class="chart-wrapper">
           <canvas id="history-chart"></canvas>
         </div>
+        <div id="history-error" class="error-text"></div>
       </section>
     </main>
+
+    <footer class="footer">
+      © 2025 Zenzoro. Built for investors — powered by live market data.
+    </footer>
   </div>
 
-  <script src="/app.js" defer></script>
+  <script src="/app.js"></script>
 </body>
 </html>
