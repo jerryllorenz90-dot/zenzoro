@@ -1,10 +1,10 @@
-import PriceHistory from "../models/PriceHistory.js";
+const historyService = require("../services/historyService");
 
-export const getHistory = async (req, res) => {
+exports.getHistory = async (req, res) => {
   try {
-    const history = await PriceHistory.find().sort({ timestamp: -1 }).limit(50);
-    res.json(history);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to load price history" });
+    const data = await historyService.fetchHistory(req.query.coin, req.query.days);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch history" });
   }
 };
